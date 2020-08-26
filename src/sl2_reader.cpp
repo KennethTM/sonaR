@@ -11,18 +11,11 @@ using namespace Rcpp;
 
 // Function to read .sl2 files originally from the "arabia" R-package by Bob Rudis (<https://github.com/hrbrmstr/arabia>)
 // Modified by Kenneth Thorø Martinsen
-
-//' A "No Frills" Faster Version in C++
-//'
-//' No error checking (not even for file existence). No fancy names for channel/etc.
-//' No unnesting of validity fields. BUT, it's wicked fast.
 //'
 //' @md
-//' @param path
-//' @return data frame (tibble)
+//' @param path to '.sl2' file
+//' @return data.frame
 //' @export
-//' @examples
-//' read_sl2_cpp(system.file("exdat", "example.sl2", package="arabia")))
 // [[Rcpp::export]]
 
 DataFrame read_sl2_cpp(std::string path) {

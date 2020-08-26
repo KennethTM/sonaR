@@ -9,13 +9,13 @@ using namespace Rcpp;
 #define MAX_BUFFER_SIZE (1024 * 1000)
 #define ESTIMATED_RECS 1000
 
-//' Function to read .sl3 files
+// Function to read .sl3 files originally from the "arabia" R-package by Bob Rudis (<https://github.com/hrbrmstr/arabia>)
+// Modified by Kenneth Thorø Martinsen
+//'
 //' @md
-//' @param path
-//' @return data frame (tibble)
+//' @param path to '.sl3' file
+//' @return data.frame
 //' @export
-//' @examples
-//' #read_sl3_cpp(system.file("exdat", "example.sl2", package="arabia")))
 // [[Rcpp::export]]
 
 DataFrame read_sl3_cpp(std::string path) {
