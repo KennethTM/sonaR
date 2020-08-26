@@ -1,0 +1,372 @@
+#library(arabia)
+library(tidyverse)
+
+
+#file <- "sonar-log-api-testdata.sl3"
+file <- "Bromme 01.sl3"
+
+ReadSL3SonarLogFile <- function(path, to_df = FALSE, maxread = 10000){
+  
+  f <- file(path, "rb")
+  dat <- readBin(f, "raw", n = file.size(file), endian="little")
+  close(f)
+  
+  SL3Frame.Size <- 168
+  SonarLogFileHeader.Size <- 8
+  
+  header <- readBin(dat, what = "raw", n = SonarLogFileHeader.Size)
+  
+  format <- readBin(header[1:2], "int", size=2, endian="little", signed=FALSE)
+  version <- readBin(header[3:4], "int", size=2, endian="little", signed=FALSE)
+  blockSize <- readBin(header[5:6], "int", size=2, endian="little", signed=FALSE)
+  alwaysZero <- readBin(header[7:8], "int", size=2, endian="little", signed=FALSE)
+  
+  position <- SonarLogFileHeader.Size
+  file_length <- file.size(path)
+  
+  frames <- vector("list", length = file_length/2000)
+  
+  i = 1 
+  
+  pb <- txtProgressBar(min = 0, max = file_length/3000, style = 3)
+  
+  while((SL3Frame.Size + position) < file_length){
+    
+    dat_buffer = dat[(position+1):(position+SL3Frame.Size)]
+    frame = SL3Frame(dat_buffer)
+    
+    position = position + frame$TotalLength
+    
+    frames[[i]] = frame
+    
+    i = i + 1
+    
+    setTxtProgressBar(pb, i)
+    
+    if(i > maxread){
+      break
+    }
+    
+  }
+  
+  if(to_df){
+    
+    df <- bind_rows(frames) %>% 
+      mutate(
+        SurveyType = dplyr::case_when(
+          SurveyType == 0 ~ "Primary",
+          SurveyType == 1 ~ "Secondary",
+          SurveyType == 2 ~ "DSI_Downscan",
+          SurveyType == 3 ~ "Left_Sidescan",
+          SurveyType == 4 ~ "Right_Sidescan",
+          SurveyType == 5 ~ "Sidescan",
+          SurveyType == 6 ~ "Unknown7",
+          SurveyType == 7 ~ "Unknown8",
+          SurveyType == 8 ~ "ThreeDimensional",
+          TRUE ~ "Other/invalid"
+        )
+      ) %>%
+      mutate(
+        Frequency = dplyr::case_when(
+          Frequency == 0 ~ "200 KHz",
+          Frequency == 1 ~ "50 KHz",
+          Frequency == 2 ~ "83 KHz",
+          Frequency == 4 ~ "455 KHz",
+          Frequency == 5 ~ "800 KHz",
+          Frequency == 6 ~ "38 KHz",
+          Frequency == 7 ~ "28 KHz",
+          Frequency == 8 ~ "130-210 KHz",
+          Frequency == 9 ~ "90-150 KHz",
+          Frequency == 10 ~ "40-60 KHz",
+          Frequency == 11 ~ "25-45 KHz",
+          TRUE ~ "Other/invalid"
+        )
+      )
+    
+    return(as_tibble(df))
+    
+  }else{
+    
+    return(list("frames" = frames, "format" = format, "version" = version, "blocksize" = blockSize))
+    
+  }
+  
+}
+
+
+SL3Frame <- function(bytes){
+  data.frame(
+    PositionOfFirstByte = readBin(bytes[1:4], "int", size=4, endian="little"),
+    # Unknown1 = readBin(bytes[5:8], "int", size=4, endian="little"),
+    TotalLength = readBin(bytes[9:10], "int", size=2, endian="little", signed=FALSE),
+    PreviousLength = readBin(bytes[11:12], "int", size=2, endian="little", signed=FALSE),
+    SurveyType = readBin(bytes[13:14], "int", size=2, endian="little", signed=FALSE),
+    # Unknown2 = readBin(bytes[15:16], "int", size=2, endian="little", signed=FALSE),
+    NumberOfCampaignInThisType = readBin(bytes[17:20], "int", size=4, endian="little"),
+    MinRange = readBin(bytes[21:24], "numeric", size=4, endian="little"),
+    MaxRange = readBin(bytes[25:28], "numeric", size=4, endian="little"),
+    # Unknown3 = readBin(bytes[29:32], "int", size=4, endian="little"),
+    # Unknown4 = readBin(bytes[33:36], "int", size=4, endian="little"),
+    # Unknown5 = readBin(bytes[37:40], "int", size=4, endian="little"),
+    HardwareTime = readBin(bytes[41:44], "int", size=4, endian="little"),
+    OriginalLengthOfEchoData = readBin(bytes[45:48], "int", size=4, endian="little"),
+    WaterDepth = readBin(bytes[49:52], "numeric", size=4, endian="little"),
+    Frequency = readBin(bytes[53:54], "int", size=2, endian="little", signed=FALSE),
+    # Unknown6 = readBin(bytes[55:58], "int", size=4, endian="little"),
+    # Unknown7 = readBin(bytes[59:62], "int", size=4, endian="little"),
+    # Unknown8 = readBin(bytes[63:66], "int", size=4, endian="little"),
+    # Unknown9 = readBin(bytes[67:70], "int", size=4, endian="little"),
+    # Unknown10 = readBin(bytes[71:74], "int", size=4, endian="little"),
+    # Unknown11 = readBin(bytes[75:78], "int", size=4, endian="little"),
+    # Unknown12 = readBin(bytes[79:82], "int", size=4, endian="little"),
+    # Unknown13 = readBin(bytes[83:84], "int", size=2, endian="little", signed=FALSE),
+    GNSSSpeed = readBin(bytes[85:88], "numeric", size=4, endian="little"),
+    WaterTemperature = readBin(bytes[89:92], "numeric", size=4, endian="little"),
+    X = readBin(bytes[93:96], "int", size=4, endian="little"),
+    Y = readBin(bytes[97:100], "int", size=4, endian="little"),
+    WaterSpeed = readBin(bytes[101:104], "numeric", size=4, endian="little"),
+    GNSSHeading = readBin(bytes[105:108], "numeric", size=4, endian="little"),
+    GNSSAltitude = readBin(bytes[109:112], "numeric", size=4, endian="little"),
+    MagneticHeading = readBin(bytes[113:116], "numeric", size=4, endian="little"),
+    # Flags = list(
+    #   bytes[117:118] %>%
+    #     rawToBits() %>%
+    #     as.logical() %>%
+    #     set_names(
+    #       c(
+    #         "headingValid", "altitudeValid", sprintf("unk%d", 1:7),
+    #         "gpsSpeedValid", "waterTempValid", "unk8", "positionValid",
+    #         "unk9", "waterSpeedValid", "trackValid"
+    #       )
+    #     ) %>%
+    #     .[c(1:2, 10:11, 13, 15:16)] %>%
+    #     as.list() %>%
+    #     purrr::flatten_df()
+    # ),
+    # Unknown14 = readBin(bytes[119:122], "int", size=4, endian="little"),
+    # Unknown15 = readBin(bytes[123:124], "int", size=2, endian="little", signed=FALSE),
+    Milliseconds = readBin(bytes[125:128], "int", size=4, endian="little"),
+    # LastPrimaryChannelFrameOffset = readBin(bytes[129:132], "int", size=4, endian="little"),
+    # LastSecondaryChannelFrameOffset = readBin(bytes[133:136], "int", size=4, endian="little"),
+    # LastDownScanChannelFrameOffset = readBin(bytes[137:140], "int", size=4, endian="little"),
+    # LastSidescanLeftChannelFrameOffset = readBin(bytes[141:144], "int", size=4, endian="little"),
+    # LastSidescanRightChannelFrameOffset = readBin(bytes[145:148], "int", size=4, endian="little"),
+    # LastSidescanCompositeChannelFrameOffset = readBin(bytes[149:152], "int", size=4, endian="little"),
+    # UnknownOffset1 = readBin(bytes[153:156], "int", size=4, endian="little"),
+    # UnknownOffset2 = readBin(bytes[157:160], "int", size=4, endian="little"),
+    # UnknownOffset3 = readBin(bytes[161:164], "int", size=4, endian="little"),
+    Last3DChannelFrameOffset = readBin(bytes[165:168], "int", size=4, endian="little")
+  )
+}
+
+t0<-Sys.time()
+tmp1 <- ReadSL3SonarLogFile(file, to_df = TRUE, maxread = 20000)
+t1<-Sys.time()
+t1-t0
+
+
+# lowrance_xy_to_wgs84 <- function(x, y){
+#   POLAR_EARTH_RADIUS = 6356752.3142
+#   longitude = x / POLAR_EARTH_RADIUS * (180/pi)
+#   
+#   temp = y / POLAR_EARTH_RADIUS
+#   temp = exp(temp)
+#   temp = (2*atan(temp))-(pi/2)
+#   
+#   latitude = temp * (180/pi)
+#   
+#   return(list(longitude, latitude))
+# }
+
+
+
+
+tmp2 <- tmp1 %>% 
+  mutate(WaterDepth = WaterDepth*0.3048) %>% 
+  filter(SurveyType == "Sidescan" & WaterDepth > 0)
+
+f <- file(file, "rb")
+dat <- readBin(f, "raw", n = file.size(file), endian="little")
+close(f)
+
+tmp3 <- lapply(tmp2$PositionOfFirstByte, function(x){
+  
+  SL3Frame.Size <- 168
+
+  return(as.integer(dat[(x+SL3Frame.Size):(x+SL3Frame.Size+2800-1)])) #2968
+})
+
+tmp4 <- do.call(cbind, tmp3)
+
+png("sidescan.png")
+par(mar = rep(0, 4))
+image(tmp4, useRaster = TRUE, axes = FALSE)
+dev.off()
+
+library(sf)
+#library(leaflet)
+
+tmp5 <- tmp2 %>% 
+  st_as_sf(coords=c("X", "Y"), crs = "+proj=merc +a=6356752.3142 +b=6356752.3142") %>% 
+  st_transform(4326) %>% 
+  select(WaterDepth)
+
+st_write(tmp5, "bromme.kml")
+
+
+
+##
+#create georeferenced image!
+
+library(gdalUtils)
+
+gdal_translate(src_dataset = "sidescan.png", dst_dataset = "sidescan.tif",
+               gcp = rbind(c(1, 240, 11.51512, 55.48294),
+                           c(240, 240, 11.51431, 55.48224),
+                           c(480, 240, 11.51281, 55.48204)))
+
+gdalwarp(srcfile = "sidescan.tif", dstfile = "sidescan_warp.tif",
+         tps = TRUE, s_srs = "EPSG:4326", t_srs = "EPSG:4326", verbose = TRUE) #virker i bash
+
+# tmp2 <- tmp1 %>% 
+#   mutate(WaterDepth = WaterDepth*0.3048) %>% 
+#   filter(SurveyType == "ThreeDimensional" & WaterDepth > 0)
+# 
+# tmp3 <- lapply(tmp2$PositionOfFirstByte, function(x){
+#   
+#   SL3Frame.Size <- 168
+#   
+#   return(dat[(x+SL3Frame.Size):(x+SL3Frame.Size+512-1)])
+# })
+# 
+# tmp4 <- do.call(rbind, tmp3)
+# 
+# png("test.png")
+# par(mar = rep(0, 4))
+# image(tmp4, useRaster = TRUE, axes = FALSE)
+# dev.off()
+# 
+# lapply(split(tmp3[[10]], ceiling(seq_along(tmp3[[10]])/2)), function(b){
+#   readBin(b, "int", size = 2, endian = "little")
+# })
+
+
+
+
+read_sl2_edit <- function(path, verbose=TRUE) {
+  
+  f <- file(path.expand(path), "rb")
+  dat <- readBin(f, "raw", n = file.size(path.expand(path)), endian="little")
+  close(f)
+  
+  # read in the header
+  header <- readBin(dat, what = "raw", n = 8)
+  
+  format <- readBin(header[1:2], "int", size=2, endian="little", signed=FALSE)
+  
+  if (!(format %in% 1:3)) stop("Invalid 'format' in header; Likely not an slg/sl2/sl3 file")
+  
+  ok_formats <- c("slg", "sl2", "sl3")
+  if (verbose) message("Format: ", ok_formats[format])
+  
+  version <- readBin(header[3:4], "int", size=2, endian="little", signed=FALSE)
+  blockSize <- readBin(header[5:6], "int", size=2, endian="little", signed=FALSE)
+  
+  if (blockSize == 1970) {
+    if (verbose) message("Block size: downscan")
+  } else if (blockSize == 3200) {
+    if (verbose) message("Block size: sidescan")
+  } else {
+    stop("Block size is not 'downscan' or 'sidescan'; Likely not an slg/sl2/sl3 file")
+  }
+  
+  alwaysZero <- readBin(header[7:8], "int", size=2, endian="little", signed=FALSE)
+  
+  # yep, we're going to build a list the hard/slow way
+  sl2_lst <- vector("list")
+  idx <- 1
+  pos <- 8 # keeping track of our place in the stream
+  
+  while (pos < length(dat)) {
+    
+    # if verbose mode echo a "." every 100 records
+    if (verbose && ((idx %% 100) == 0)) cat(".")
+    
+    blockSize <- readBin(dat[(pos+29):(pos+30)], "int", size=2, endian="little", signed=FALSE)
+    prevBlockSize <- readBin(dat[(pos+31):(pos+32)], "int", size=2, endian="little", signed=FALSE)
+    packetSize <- readBin(dat[(pos+35):(pos+36)], "int", size=2, endian="little", signed=FALSE)
+    frameIndex <- readBin(dat[(pos+37):(pos+40)], "int", size=4, endian="little")
+    
+    dplyr::data_frame(
+      channel = readBin(dat[(pos+33):(pos+34)], "int", size=2,endian="little", signed=FALSE),
+      upperLimit = readBin(dat[(pos+41):(pos+44)], "double", size=4, endian="little"),
+      lowerLimit = readBin(dat[(pos+45):(pos+48)], "double", size=4, endian="little"),
+      frequency = readBin(dat[(pos+51)], "int", size=1, endian="little", signed=FALSE),
+      waterDepth = readBin(dat[(pos+65):(pos+68)], "double", size=4, endian="little"),
+      keelDepth = readBin(dat[(pos+69):(pos+72)], "double", size=4, endian="little"),
+      speedGps = readBin(dat[(pos+101):(pos+104)], "double", size=4, endian="little"),
+      temperature = readBin(dat[(pos+105):(pos+108)], "double", size=4, endian="little"),
+      lng_enc = readBin(dat[(pos+109):(pos+112)], "integer", size=4, endian="little"),
+      lat_enc = readBin(dat[(pos+113):(pos+116)], "integer", size=4, endian="little"),
+      speedWater = readBin(dat[(pos+117):(pos+120)], "double", size=4, endian="little"),
+      track = readBin(dat[(pos+121):(pos+124)], "double", size=4, endian="little"),
+      altitude = readBin(dat[(pos+125):(pos+128)], "double", size=4, endian="little"),
+      heading = readBin(dat[(pos+129):(pos+132)], "double", size=4, endian="little"),
+      timeOffset = readBin(dat[(pos+141):(pos+144)], "integer", size=4, endian="little"),
+      flags = list(
+        dat[(pos+133):(pos+134)] %>%
+          rawToBits() %>%
+          as.logical() %>%
+          set_names(
+            c(
+              "headingValid", "altitudeValid", sprintf("unk%d", 1:7),
+              "gpsSpeedValid", "waterTempValid", "unk8", "positionValid",
+              "unk9", "waterSpeedValid", "trackValid"
+            )
+          ) %>%
+          .[c(1:2, 10:11, 13, 15:16)] %>%
+          as.list() %>%
+          purrr::flatten_df()
+      )
+    ) -> sl2_lst[[idx]]
+    
+    idx <- idx + 1
+    
+    pos <- pos + (packetSize+145-1)
+    
+  }
+  
+  if (verbose) cat("\n")
+  
+  dplyr::bind_rows(sl2_lst) %>%
+    dplyr::mutate(
+      channel = dplyr::case_when(
+        channel == 0 ~ "Primary",
+        channel == 1 ~ "Secondary",
+        channel == 2 ~ "DSI (Downscan)",
+        channel == 3 ~ "Left (Sidescan)",
+        channel == 4 ~ "Right (Sidescan)",
+        channel == 5 ~ "Composite",
+        TRUE ~ "Other/invalid"
+      )
+    ) %>%
+    dplyr::mutate(
+      frequency = dplyr::case_when(
+        frequency == 0 ~ "200 KHz",
+        frequency == 1 ~ "50 KHz",
+        frequency == 2 ~ "83 KHz",
+        frequency == 4 ~ "800 KHz",
+        frequency == 5 ~ "38 KHz",
+        frequency == 6 ~ "28 KHz",
+        frequency == 7 ~ "130-210 KHz",
+        frequency == 8 ~ "90-150 KHz",
+        frequency == 9 ~ "40-60 KHz",
+        frequency == 10~ "25-45 KHz",
+        TRUE ~ "Other/invalid"
+      )
+    ) %>%
+    tidyr::unnest(flags)
+  
+}
+
+tmp1 <- read_sl2_edit(file)

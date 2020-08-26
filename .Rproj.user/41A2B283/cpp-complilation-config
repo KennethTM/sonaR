@@ -1,0 +1,24 @@
+{
+    "args" : [
+        "-I/usr/lib/llvm-6.0/lib/clang/6.0.0/include",
+        "-I/usr/include/c++/7",
+        "-I/usr/include/x86_64-linux-gnu/c++/7",
+        "-I/usr/include/c++/7/backward",
+        "-I/usr/lib/gcc/x86_64-linux-gnu/7/include",
+        "-I/usr/local/include",
+        "-I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed",
+        "-I/usr/include/x86_64-linux-gnu",
+        "-I/usr/include",
+        "-I/home/kenneth/R/x86_64-pc-linux-gnu-library/3.6/Rcpp/include",
+        "-std=gnu++11",
+        "-I/usr/share/R/include",
+        "-DNDEBUG",
+        "-fpic",
+        "-fdebug-prefix-map=/build/r-base-V28x5H/r-base-3.6.3=.",
+        "-fstack-protector-strong",
+        "-D_FORTIFY_SOURCE=2"
+    ],
+    "hash" : "1598444442",
+    "is_cpp" : true,
+    "pch" : "Rcpp"
+}

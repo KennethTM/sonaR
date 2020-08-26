@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1598431192502.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "7F7193F",
+    "lastKnownWriteTime" : 1598434323,
+    "last_content_update" : 1598434323412,
+    "path" : "~/Documents/sonaR/src/sl2_reader.cpp",
+    "project_path" : "src/sl2_reader.cpp",
+    "properties" : {
+        "cursorPosition" : "14,39",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "cpp"
+}

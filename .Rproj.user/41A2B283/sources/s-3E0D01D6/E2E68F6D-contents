@@ -1,0 +1,131 @@
+library(raster)
+library(tidyverse)
+library(sf)
+#library(jsonlite)
+library(ndjson)
+library(mapview)
+
+#df <- fromJSON("Sonar_2020-08-15.json")
+
+out <- ndjson::stream_in(path="Sonar_2020-08-15.json")
+
+#filter from primary channel and change to lat/long 
+#https://wiki.openstreetmap.org/wiki/SL2
+
+POLAR_EARTH_RADIUS = 6356752.3142
+
+out_filt <- out %>% 
+  filter(channel == 0) %>% 
+  mutate(lon = longitude / POLAR_EARTH_RADIUS * (180/pi),
+         lat = ((2*atan(exp(latitude / POLAR_EARTH_RADIUS))) - (pi/2)) * (180/pi),
+         depth_m = waterDepth / 3.2808399,
+         speed_ms = speedGps / 1.94385)
+
+out_filt_sf <- out_filt %>% 
+  st_as_sf(coords=c("lon", "lat"), crs = 4326)
+  
+out_filt_sf %>% 
+  sample_frac(0.1) %>% 
+  ggplot()+
+  geom_sf(aes(col = depth_m))
+
+
+
+
+
+#læs header med rcpp
+
+library(Rcpp)
+sourceCpp("arabia_oldsource.cpp")
+
+filepath <- "Sonar_2020-08-15_18.17.15.sl2"
+
+df_sl2 <- read_sl2_cpp(filepath)
+
+lowrance_to_wgs84 <- function(x, lat_or_lon = NULL){
+  #https://wiki.openstreetmap.org/wiki/SL2
+  POLAR_EARTH_RADIUS = 6356752.3142
+  
+  if(lat_or_lon == "lon"){
+    lon = x / POLAR_EARTH_RADIUS * (180/pi)
+    return(lon)
+  }else if(lat_or_lon == "lat"){
+    lat = ((2*atan(exp(x / POLAR_EARTH_RADIUS))) - (pi/2)) * (180/pi)
+    return(lat)
+  }else{
+    return(NA)
+  }
+}
+
+f <- file(filepath, "rb")
+dat <- readBin(f, "raw", n = file.size(filepath), endian="little")
+close(f)
+
+df_sidescan <- df_sl2 %>% 
+  filter(channel == 5) %>% 
+  mutate(lon = lowrance_to_wgs84(lng_enc, "lon"),
+         lat = lowrance_to_wgs84(lat_enc, "lat"),
+         depth_m = waterDepth / 3.2808399,
+         speed_ms = speedGps / 1.94385,
+         upperlimit_m = -1*upperLimit / 3.2808399,
+         lowerlimit_m = lowerLimit / 3.2808399) %>%
+  mutate(raw = map(frameOffset, function(x){as.integer(dat[(x+144):(x+144+2800-1)])}),
+         x_right_corner = lng_enc - upperlimit_m * cos(track),
+         x_left_corner = lng_enc + lowerlimit_m * cos(track),
+         y_right_corner = lat_enc - upperlimit_m * sin(track),
+         y_left_corner = lat_enc + lowerlimit_m * sin(track)) %>% 
+  mutate(lon_right = lowrance_to_wgs84(x_right_corner, "lon"),
+         lat_right = lowrance_to_wgs84(y_right_corner, "lat"),
+         lon_left = lowrance_to_wgs84(x_left_corner, "lon"),
+         lat_left = lowrance_to_wgs84(y_left_corner, "lat"))
+
+
+# library(mapview)
+# df_sidescan[2000:5000,] %>% st_as_sf(coords = c("lon", "lat"), crs = 4326) %>% mapview()
+
+df_sidescan[34500:36000,] %>% 
+  ggplot(aes(lon, lat))+
+  geom_point()+
+  geom_point(aes(lon_right, lat_right), col = "red")+
+  geom_point(aes(lon_left, lat_left), col = "blue")
+
+
+
+# sidescan_raw <- lapply(df_sidescan$frameOffset, function(x){
+#   
+#   frameSize <- 144
+#   
+#   return(as.integer(dat[(x+frameSize):(x+frameSize+2800-1)])) 
+# })
+# 
+# sidescan_raw_mat <- do.call(cbind, sidescan_raw)
+# image(sidescan_raw_mat[,10000:12000])
+
+sub <- df_sidescan[34500:36000,] %>% 
+  mutate(frameNumber = row_number())
+
+mat <- do.call(cbind, sub$raw)
+
+mid <- cbind(sub$frameNumber, 1400, sub$lon, sub$lat)
+right <- cbind(sub$frameNumber, 2800, sub$lon_right, sub$lat_right)
+left <- cbind(sub$frameNumber, 0, sub$lon_left, sub$lat_left)
+
+gcp <- rbind(mid[seq(1, nrow(mid), 25),],
+             right[seq(1, nrow(right), 25),],
+             left[seq(1, nrow(left), 25),])
+
+mat_raster <- raster(mat, xmn=0, xmx=ncol(mat), ymn=0, ymx=nrow(mat))
+plot(mat_raster)
+
+writeRaster(mat_raster, "mat.tif", overwrite = TRUE, format = "GTiff")
+
+library(gdalUtils)
+
+gdal_translate(src_dataset = "mat.tif", 
+               dst_dataset = "mat_gcp.tif",
+               gcp = gcp)
+
+gdalwarp(srcfile = "mat_gcp.tif", dstfile = "mat_gcp_warp.tif",
+         tps = TRUE, s_srs = "EPSG:4326", t_srs = "EPSG:4326", verbose = TRUE, ot = "Byte", overwrite = TRUE, dstnodata = 0)
+
+KML(raster("mat_gcp_warp.tif"), "mat_gcp_warp.kml", col = heat.colors(10), overwrite = TRUE)
