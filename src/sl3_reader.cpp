@@ -164,6 +164,8 @@ DataFrame read_sl3_cpp(std::string path) {
     if (i % 10000 == 0)
       checkUserInterrupt();
     
+    i++;
+    
   }
   
   PositionOfFirstByteV.resize(PositionOfFirstByteV.size()-1);

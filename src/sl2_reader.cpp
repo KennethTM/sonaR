@@ -23,23 +23,22 @@ DataFrame read_sl2_cpp(std::string path) {
   std::string full_path = std::string(R_ExpandFileName(path.c_str()));
   
   char buffer[MAX_BUFFER_SIZE];
-  std::vector < long > frameOffsetV; frameOffsetV.reserve(ESTIMATED_RECS);
-  std::vector < long > blockSizeV; blockSizeV.reserve(ESTIMATED_RECS);
-  std::vector < long > channelV; channelV.reserve(ESTIMATED_RECS);
-  std::vector < long > packetSizeV; packetSizeV.reserve(ESTIMATED_RECS);
-  std::vector < float > upperLimitV; upperLimitV.reserve(ESTIMATED_RECS);
-  std::vector < float > lowerLimitV; lowerLimitV.reserve(ESTIMATED_RECS);
-  std::vector < float > waterDepthV; waterDepthV.reserve(ESTIMATED_RECS);
-  std::vector < float > keelDepthV; keelDepthV.reserve(ESTIMATED_RECS);
-  std::vector < float > speedGpsV; speedGpsV.reserve(ESTIMATED_RECS);
-  std::vector < float > temperatureV; temperatureV.reserve(ESTIMATED_RECS);
-  std::vector < float > speedWaterV; speedWaterV.reserve(ESTIMATED_RECS);
-  std::vector < float > trackV; trackV.reserve(ESTIMATED_RECS);
-  std::vector < float > altitudeV; altitudeV.reserve(ESTIMATED_RECS);
-  std::vector < float > headingV; headingV.reserve(ESTIMATED_RECS);
-  std::vector < float > timeOffsetV; timeOffsetV.reserve(ESTIMATED_RECS);
-  std::vector < long > lng_encV; lng_encV.reserve(ESTIMATED_RECS);
-  std::vector < long > lat_encV; lat_encV.reserve(ESTIMATED_RECS);
+  std::vector < long > PositionOfFirstByteV; PositionOfFirstByteV.reserve(ESTIMATED_RECS);
+  std::vector < long > TotalLengthV; TotalLengthV.reserve(ESTIMATED_RECS);
+  std::vector < long > SurveyTypeV; SurveyTypeV.reserve(ESTIMATED_RECS);
+  std::vector < float > MinRangeV; MinRangeV.reserve(ESTIMATED_RECS);
+  std::vector < float > MaxRangeV; MaxRangeV.reserve(ESTIMATED_RECS);
+  std::vector < float > WaterDepthV; WaterDepthV.reserve(ESTIMATED_RECS);
+  //std::vector < long > FrequencyV; FrequencyV.reserve(ESTIMATED_RECS);
+  std::vector < float > GNSSSpeedV; GNSSSpeedV.reserve(ESTIMATED_RECS);
+  std::vector < float > WaterTemperatureV; WaterTemperatureV.reserve(ESTIMATED_RECS);
+  std::vector < float > WaterSpeedV; WaterSpeedV.reserve(ESTIMATED_RECS);
+  std::vector < float > GNSSHeadingV; GNSSHeadingV.reserve(ESTIMATED_RECS);
+  std::vector < float > GNSSAltitudeV; GNSSAltitudeV.reserve(ESTIMATED_RECS);
+  std::vector < float > MagneticHeadingV; MagneticHeadingV.reserve(ESTIMATED_RECS);
+  std::vector < long > MillisecondsV; MillisecondsV.reserve(ESTIMATED_RECS);
+  std::vector < long > XLowranceV; XLowranceV.reserve(ESTIMATED_RECS);
+  std::vector < long > YLowranceV; YLowranceV.reserve(ESTIMATED_RECS);
   std::vector < long > timeoffsetV; timeoffsetV.reserve(ESTIMATED_RECS);
   std::vector < bool > headingValidV; headingValidV.reserve(ESTIMATED_RECS);
   std::vector < bool > altitudeValidV; altitudeValidV.reserve(ESTIMATED_RECS);
@@ -66,72 +65,76 @@ DataFrame read_sl2_cpp(std::string path) {
   
   in.seekg(8); // start of records
   
+  int i;
+  
   while (!(in.tellg() == -1)) {
     
     std::streampos recStart = in.tellg();
     
-    uint32_t frameOffset;
+    uint32_t PositionOfFirstByte;
     in.seekg(recStart); in.seekg(0, std::ios_base::cur);
-    in.read((char *)&frameOffset, sizeof(frameOffset));
+    in.read((char *)&PositionOfFirstByte, sizeof(PositionOfFirstByte));
     
-    frameOffsetV.push_back(frameOffset);
+    PositionOfFirstByteV.push_back(PositionOfFirstByte);
     
-    uint16_t blockSize;
+    uint16_t TotalLength;
     in.seekg(recStart); in.seekg(28, std::ios_base::cur);
-    in.read((char *)&blockSize, sizeof(blockSize));
+    in.read((char *)&TotalLength, sizeof(TotalLength));
     
-    blockSizeV.push_back(blockSize);
+    TotalLengthV.push_back(TotalLength);
     
-    uint16_t channel;
+    uint16_t SurveyType;
     in.seekg(recStart); in.seekg(32, std::ios_base::cur);
-    in.read((char *)&channel, sizeof(channel));
+    in.read((char *)&SurveyType, sizeof(SurveyType));
     
-    channelV.push_back(channel);
+    SurveyTypeV.push_back(SurveyType);
     
-    uint16_t packetSize;
-    in.seekg(recStart); in.seekg(34, std::ios_base::cur);
-    in.read((char *)&packetSize, sizeof(packetSize));
+    //uint16_t packetSize;
+    //in.seekg(recStart); in.seekg(34, std::ios_base::cur);
+    //in.read((char *)&packetSize, sizeof(packetSize));
     
-    packetSizeV.push_back(packetSize);
+    //packetSizeV.push_back(packetSize);
     
-    float upperLimit, lowerLimit;
+    float MinRange, MaxRange;
     in.seekg(recStart); in.seekg(40, std::ios_base::cur);
-    in.read((char *)&upperLimit, sizeof(upperLimit));
-    in.read((char *)&lowerLimit, sizeof(lowerLimit));
+    in.read((char *)&MinRange, sizeof(MinRange));
+    in.read((char *)&MaxRange, sizeof(MaxRange));
     
-    upperLimitV.push_back(upperLimit);
-    lowerLimitV.push_back(lowerLimit);
+    MinRangeV.push_back(MinRange);
+    MaxRangeV.push_back(MaxRange);
     
-    float waterDepth, keelDepth;
+    //uint8_t Frequency;
+    //in.seekg(recStart); in.seekg(53, std::ios_base::cur);
+    //in.read((char *)&Frequency, sizeof(Frequency));
+    
+    float WaterDepth;
     in.seekg(recStart); in.seekg(64, std::ios_base::cur);
-    in.read((char *)&waterDepth, sizeof(waterDepth));
-    in.read((char *)&keelDepth, sizeof(keelDepth));
-    
-    waterDepthV.push_back(waterDepth);
-    keelDepthV.push_back(keelDepth);
-    
-    float speedGps, temperature, speedWater, track, altitude, heading;
-    uint32_t lng_eng, lat_enc;
+    in.read((char *)&WaterDepth, sizeof(WaterDepth));
+
+    WaterDepthV.push_back(WaterDepth);
+
+    float GNSSSpeed, WaterTemperature, WaterSpeed, GNSSHeading, GNSSAltitude, MagneticHeading;
+    uint32_t XLowrance, YLowrance;
     std::bitset<16> flags;
     in.seekg(recStart); in.seekg(100, std::ios_base::cur);
-    in.read((char *)&speedGps, sizeof(speedGps));
-    in.read((char *)&temperature, sizeof(temperature));
-    in.read((char *)&lng_eng, sizeof(lng_eng));
-    in.read((char *)&lat_enc, sizeof(lat_enc));
-    in.read((char *)&speedWater, sizeof(speedWater));
-    in.read((char *)&track, sizeof(track));
-    in.read((char *)&altitude, sizeof(altitude));
-    in.read((char *)&heading, sizeof(heading));
+    in.read((char *)&GNSSSpeed, sizeof(GNSSSpeed));
+    in.read((char *)&WaterTemperature, sizeof(WaterTemperature));
+    in.read((char *)&XLowrance, sizeof(XLowrance));
+    in.read((char *)&YLowrance, sizeof(YLowrance));
+    in.read((char *)&WaterSpeed, sizeof(WaterSpeed));
+    in.read((char *)&GNSSHeading, sizeof(GNSSHeading));
+    in.read((char *)&GNSSAltitude, sizeof(GNSSAltitude));
+    in.read((char *)&MagneticHeading, sizeof(MagneticHeading));
     in.read((char *)&flags, sizeof(flags));
     
-    speedGpsV.push_back(speedGps);
-    temperatureV.push_back(temperature);
-    speedWaterV.push_back(speedWater);
-    trackV.push_back(track);
-    altitudeV.push_back(altitude);
-    headingV.push_back(heading);
-    lng_encV.push_back(lng_eng);
-    lat_encV.push_back(lat_enc);
+    GNSSSpeedV.push_back(GNSSSpeed);
+    WaterTemperatureV.push_back(WaterTemperature);
+    WaterSpeedV.push_back(WaterSpeed);
+    GNSSHeadingV.push_back(GNSSHeading);
+    GNSSAltitudeV.push_back(GNSSAltitude);
+    MagneticHeadingV.push_back(MagneticHeading);
+    XLowranceV.push_back(XLowrance);
+    YLowranceV.push_back(YLowrance);
     
     headingValidV.push_back(flags.test(0));
     altitudeValidV.push_back(flags.test(1));
@@ -141,34 +144,39 @@ DataFrame read_sl2_cpp(std::string path) {
     waterSpeedValidV.push_back(flags.test(14));
     trackValidV.push_back(flags.test(15));
     
-    uint32_t timeOffset;
+    uint32_t Milliseconds;
     in.seekg(recStart); in.seekg(140, std::ios_base::cur);
-    in.read((char *)&timeOffset, sizeof(timeOffset));
+    in.read((char *)&Milliseconds, sizeof(Milliseconds));
     
-    timeOffsetV.push_back(timeOffset);
+    MillisecondsV.push_back(Milliseconds);
     
-    in.seekg(recStart); in.seekg(144, std::ios_base::cur);
-    in.seekg(packetSize, std::ios_base::cur);
+    in.seekg(recStart); 
+    //in.seekg(144, std::ios_base::cur);
+    in.seekg(TotalLength, std::ios_base::cur);
+    
+    if (i % 10000 == 0)
+      checkUserInterrupt();
+    
+    i++;
     
   }
   
-  frameOffsetV.resize(frameOffsetV.size()-1);
-  blockSizeV.resize(blockSizeV.size()-1);
-  packetSizeV.resize(packetSizeV.size()-1);
-  channelV.resize(channelV.size()-1);
-  upperLimitV.resize(upperLimitV.size()-1);
-  lowerLimitV.resize(lowerLimitV.size()-1);
-  waterDepthV.resize(waterDepthV.size()-1);
-  keelDepthV.resize(keelDepthV.size()-1);
-  speedGpsV.resize(speedGpsV.size()-1);
-  temperatureV.resize(temperatureV.size()-1);
-  speedWaterV.resize(speedWaterV.size()-1);
-  trackV.resize(trackV.size()-1);
-  altitudeV.resize(altitudeV.size()-1);
-  headingV.resize(headingV.size()-1);
-  lng_encV.resize(lng_encV.size()-1);
-  lat_encV.resize(lat_encV.size()-1);
-  timeOffsetV.resize(timeOffsetV.size()-1);
+  PositionOfFirstByteV.resize(PositionOfFirstByteV.size()-1);
+  TotalLengthV.resize(TotalLengthV.size()-1);
+  SurveyTypeV.resize(SurveyTypeV.size()-1);
+  MinRangeV.resize(MinRangeV.size()-1);
+  MaxRangeV.resize(MaxRangeV.size()-1);
+  WaterDepthV.resize(WaterDepthV.size()-1);
+  //FrequencyV.resize(FrequencyV.size()-1);
+  GNSSSpeedV.resize(GNSSSpeedV.size()-1);
+  WaterTemperatureV.resize(WaterTemperatureV.size()-1);
+  WaterSpeedV.resize(WaterSpeedV.size()-1);
+  GNSSHeadingV.resize(GNSSHeadingV.size()-1);
+  GNSSAltitudeV.resize(GNSSAltitudeV.size()-1);
+  MagneticHeadingV.resize(MagneticHeadingV.size()-1);
+  XLowranceV.resize(XLowranceV.size()-1);
+  YLowranceV.resize(YLowranceV.size()-1);
+  MillisecondsV.resize(MillisecondsV.size()-1);
   headingValidV.resize(headingValidV.size()-1);
   altitudeValidV.resize(altitudeValidV.size()-1);
   gpsSpeedValidV.resize(gpsSpeedValidV.size()-1);
@@ -178,23 +186,22 @@ DataFrame read_sl2_cpp(std::string path) {
   trackValidV.resize(trackValidV.size()-1);
   
   out = DataFrame::create(
-    _["frameOffset"] = frameOffsetV,
-    _["blockSize"] = blockSizeV,
-    _["packetSize"] = packetSizeV,
-    _["channel"] = channelV,
-    _["upperLimit"] = upperLimitV,
-    _["lowerLimit"] = lowerLimitV,
-    _["waterDepth"] = waterDepthV,
-    _["keelDepth"] = keelDepthV,
-    _["speedGps"] = speedGpsV,
-    _["temperature"] = temperatureV,
-    _["speedWater"] = speedWaterV,
-    _["track"] = trackV,
-    _["altitude"] = altitudeV,
-    _["heading"] = headingV,
-    _["lng_enc"] = lng_encV,
-    _["lat_enc"] = lat_encV,
-    _["timeOffset"] = timeOffsetV,
+    _["PositionOfFirstByte"] = PositionOfFirstByteV,
+    _["TotalLength"] = TotalLengthV,
+    _["SurveyType"] = SurveyTypeV,
+    _["MinRange"] = MinRangeV,
+    _["MaxRange"] = MaxRangeV,
+    //_["Frequency"] = FrequencyV,
+    _["WaterDepth"] = WaterDepthV,
+    _["GNSSSpeed"] = GNSSSpeedV,
+    _["WaterTemperature"] = WaterTemperatureV,
+    _["WaterSpeed"] = WaterSpeedV,
+    _["GNSSHeading"] = GNSSHeadingV,
+    _["GNSSAltitude"] = GNSSAltitudeV,
+    _["MagneticHeading"] = MagneticHeadingV,
+    _["XLowrance"] = XLowranceV,
+    _["YLowrance"] = YLowranceV,
+    _["Milliseconds"] = MillisecondsV,
     _["valid"] = List::create(
       _["heading"] = headingValidV,
       _["altitude"] = altitudeValidV,

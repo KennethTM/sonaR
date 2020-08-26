@@ -4,3 +4,4 @@ test/
 .RData
 .Ruserdata
 src/*.o
+src/*.so
