@@ -1,3 +1,0 @@
-useDynLib(sonaR, .registration=TRUE)
-exportPattern("^[[:alpha:]]+")
-importFrom(Rcpp, evalCpp)
