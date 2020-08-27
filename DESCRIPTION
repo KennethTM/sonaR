@@ -1,15 +1,16 @@
 Package: sonaR
 Type: Package
-Title: Read and plot data from Lowrance sonars
+Title: Read and plot data from sonars
 Version: 0.0.1
 Date: 2020-08-26
 Authors@R: c(
     person("Kenneth", "Thorø Martinsen", email = "kenneth2810@gmail.com.com", role = c("aut", "cre"), 
            comment = c(ORCID = "0000-0001-8064-513X")))
 Maintainer: Kenneth Thorø Martinsen <kenneth2810@gmail.com.com>
-Description: Functions to read, plot and georeference sonar recordings such as single-beam and side-scan products from 'Lowrance' (<http://www.lowrance.com/>) equipment which use the '.sl2' and '.sl3' format.
+Description: Functions to read, plot and georeference sonar recordings from recreational grade equipment. Only '.sl2' and '.sl3' file formats from 'Lowrance' (<http://www.lowrance.com/>) are currently supported
 License: GPL (>= 2)
 Encoding: UTF-8
 Imports: Rcpp (>= 1.0.4)
-LinkingTo: Rcpp
+Depends: RcppProgress (>= 0.1), raster, gdalUtils
+LinkingTo: Rcpp, RcppProgress
 RoxygenNote: 7.1.0

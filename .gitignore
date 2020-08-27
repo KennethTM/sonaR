@@ -1,4 +1,6 @@
-test/
+test/*.sl3
+test/*.sl2
+test/*.rds
 .Rproj.user
 .Rhistory
 .RData

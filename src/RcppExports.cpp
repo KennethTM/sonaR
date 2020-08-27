@@ -5,32 +5,22 @@
 
 using namespace Rcpp;
 
-// read_sl2_cpp
-DataFrame read_sl2_cpp(std::string path);
-RcppExport SEXP _sonaR_read_sl2_cpp(SEXP pathSEXP) {
+// read_slx
+DataFrame read_slx(std::string path, int filesize, bool display_progress);
+RcppExport SEXP _sonaR_read_slx(SEXP pathSEXP, SEXP filesizeSEXP, SEXP display_progressSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< std::string >::type path(pathSEXP);
-    rcpp_result_gen = Rcpp::wrap(read_sl2_cpp(path));
-    return rcpp_result_gen;
-END_RCPP
-}
-// read_sl3_cpp
-DataFrame read_sl3_cpp(std::string path);
-RcppExport SEXP _sonaR_read_sl3_cpp(SEXP pathSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< std::string >::type path(pathSEXP);
-    rcpp_result_gen = Rcpp::wrap(read_sl3_cpp(path));
+    Rcpp::traits::input_parameter< int >::type filesize(filesizeSEXP);
+    Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
+    rcpp_result_gen = Rcpp::wrap(read_slx(path, filesize, display_progress));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_sonaR_read_sl2_cpp", (DL_FUNC) &_sonaR_read_sl2_cpp, 1},
-    {"_sonaR_read_sl3_cpp", (DL_FUNC) &_sonaR_read_sl3_cpp, 1},
+    {"_sonaR_read_slx", (DL_FUNC) &_sonaR_read_slx, 3},
     {NULL, NULL, 0}
 };
 

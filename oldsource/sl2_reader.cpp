@@ -11,11 +11,6 @@ using namespace Rcpp;
 
 // Function to read .sl2 files originally from the "arabia" R-package by Bob Rudis (<https://github.com/hrbrmstr/arabia>)
 // Modified by Kenneth Thorø Martinsen
-//'
-//' @md
-//' @param path to '.sl2' file
-//' @return data.frame
-//' @export
 // [[Rcpp::export]]
 
 DataFrame read_sl2_cpp(std::string path) {
@@ -28,8 +23,8 @@ DataFrame read_sl2_cpp(std::string path) {
   std::vector < long > SurveyTypeV; SurveyTypeV.reserve(ESTIMATED_RECS);
   std::vector < float > MinRangeV; MinRangeV.reserve(ESTIMATED_RECS);
   std::vector < float > MaxRangeV; MaxRangeV.reserve(ESTIMATED_RECS);
+  std::vector < long > FrequencyV; FrequencyV.reserve(ESTIMATED_RECS);
   std::vector < float > WaterDepthV; WaterDepthV.reserve(ESTIMATED_RECS);
-  //std::vector < long > FrequencyV; FrequencyV.reserve(ESTIMATED_RECS);
   std::vector < float > GNSSSpeedV; GNSSSpeedV.reserve(ESTIMATED_RECS);
   std::vector < float > WaterTemperatureV; WaterTemperatureV.reserve(ESTIMATED_RECS);
   std::vector < float > WaterSpeedV; WaterSpeedV.reserve(ESTIMATED_RECS);
@@ -103,9 +98,11 @@ DataFrame read_sl2_cpp(std::string path) {
     MinRangeV.push_back(MinRange);
     MaxRangeV.push_back(MaxRange);
     
-    //uint8_t Frequency;
-    //in.seekg(recStart); in.seekg(53, std::ios_base::cur);
-    //in.read((char *)&Frequency, sizeof(Frequency));
+    uint8_t Frequency;
+    in.seekg(recStart); in.seekg(53, std::ios_base::cur);
+    in.read((char *)&Frequency, sizeof(Frequency));
+    
+    FrequencyV.push_back(Frequency);
     
     float WaterDepth;
     in.seekg(recStart); in.seekg(64, std::ios_base::cur);
@@ -167,7 +164,7 @@ DataFrame read_sl2_cpp(std::string path) {
   MinRangeV.resize(MinRangeV.size()-1);
   MaxRangeV.resize(MaxRangeV.size()-1);
   WaterDepthV.resize(WaterDepthV.size()-1);
-  //FrequencyV.resize(FrequencyV.size()-1);
+  FrequencyV.resize(FrequencyV.size()-1);
   GNSSSpeedV.resize(GNSSSpeedV.size()-1);
   WaterTemperatureV.resize(WaterTemperatureV.size()-1);
   WaterSpeedV.resize(WaterSpeedV.size()-1);
@@ -191,7 +188,7 @@ DataFrame read_sl2_cpp(std::string path) {
     _["SurveyType"] = SurveyTypeV,
     _["MinRange"] = MinRangeV,
     _["MaxRange"] = MaxRangeV,
-    //_["Frequency"] = FrequencyV,
+    _["Frequency"] = FrequencyV,
     _["WaterDepth"] = WaterDepthV,
     _["GNSSSpeed"] = GNSSSpeedV,
     _["WaterTemperature"] = WaterTemperatureV,
