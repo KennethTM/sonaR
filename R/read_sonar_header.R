@@ -13,37 +13,28 @@
 read_sonar_header <- function(path, display_progress = TRUE){
   
   if(!file.exists(path)){
-    stop("The file ", path, " does not exist")
+    stop("The file: ", path, " does not exist")
   }else{
     
     filesize <- file.size(path)
     
     df <- read_slx(path, filesize, display_progress)
     
-    format <- attr(df, "format")
-    
-    #Convert units and coordinates
-    #https://wiki.openstreetmap.org/wiki/SL2
+    names(df) <- gsub(".", "", names(df), fixed = TRUE)
     
     #Convert feet to meter
-    df[, c("MinRange", "MaxRange", "WaterDepth", "GNSS.Altitude")] <- df[, c("MinRange", "MaxRange", "WaterDepth", "GNSS.Altitude")] / 3.2808399
+    df[, c("MinRange", "MaxRange", "WaterDepth", "GNSSAltitude")] <- df[, c("MinRange", "MaxRange", "WaterDepth", "GNSSAltitude")] / 3.2808399
     
     #Convert knobs to m/s
-    df[, c("WaterSpeed", "GNSS.Speed")] <-  df[, c("WaterSpeed", "GNSS.Speed")] / 3.2808399
+    df[, c("WaterSpeed", "GNSSSpeed")] <-  df[, c("WaterSpeed", "GNSSSpeed")] / 1.94385
     
-    #Convert coordinates from Lowrance projection (+proj=merc +a=6356752.3142 +b=6356752.3142) to wgs84 lat/lon (epsg: 4326)
-    POLAR_EARTH_RADIUS <- 6356752.3142
-    
-    df$lon <- df$XLowrance / POLAR_EARTH_RADIUS * (180/pi)
-    df$lat <- ((2*atan(exp(df$YLowrance / POLAR_EARTH_RADIUS))) - (pi/2)) * (180/pi)
+    df$Longitude <- .x_to_lon(df$XLowrance)
+    df$Latitude <- .y_to_lat(df$YLowrance)
     
     #Translate SurveyType
-    df$SurveyTypeLabel <- ifelse(df$SurveyType == 0, "Primary",
-                                 ifelse(df$SurveyType == 1, "Secondary",
-                                        ifelse(df$SurveyType == 2, "DSI (Downscan)",
-                                               ifelse(df$SurveyType == 3, "Left (Sidescan)",
-                                                      ifelse(df$SurveyType == 4, "Right (Sidescan)",
-                                                             ifelse(df$SurveyType == 5, "Composite (Sidescan)", "Unknown"))))))
+    df$SurveyTypeLabel <- .add_SurveyTypeLabel(df$SurveyType)
+    
+    attr(df, "sonaR") <- "header"
     
     return(df)
     }

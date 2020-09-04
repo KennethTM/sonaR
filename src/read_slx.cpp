@@ -1,3 +1,6 @@
+// Based on function to read .sl2 files originally from the "arabia" R-package by Bob Rudis (<https://github.com/hrbrmstr/arabia>)
+// Modified by Kenneth Thorø Martinsen
+
 #include <Rcpp.h>
 
 #include <iostream>
@@ -11,10 +14,7 @@
 using namespace Rcpp;
 
 #define MAX_BUFFER_SIZE (1024 * 1000)
-//#define ESTIMATED_RECS 1000
 
-// Based on function to read .sl2 files originally from the "arabia" R-package by Bob Rudis (<https://github.com/hrbrmstr/arabia>)
-// Modified by Kenneth Thorø Martinsen
 // [[Rcpp::export]]
 
 DataFrame read_slx(std::string path, int filesize, bool display_progress=true) {
@@ -108,7 +108,8 @@ DataFrame read_slx(std::string path, int filesize, bool display_progress=true) {
       MinRangeV.push_back(MinRange);
       MaxRangeV.push_back(MaxRange);
       
-      uint16_t Frequency;
+      //uint16_t Frequency;
+      uint8_t Frequency;
       in.seekg(recStart); in.seekg(53, std::ios_base::cur);
       in.read((char *)&Frequency, sizeof(Frequency));
       
@@ -212,7 +213,8 @@ DataFrame read_slx(std::string path, int filesize, bool display_progress=true) {
       
       uint32_t HardwareTime, OriginalLengthOfEchoData;
       float WaterDepth;
-      uint16_t Frequency;
+      //uint16_t Frequency;
+      uint8_t Frequency;
       
       in.seekg(recStart); in.seekg(40, std::ios_base::cur);
       in.read((char *)&HardwareTime, sizeof(HardwareTime));
@@ -331,13 +333,13 @@ DataFrame read_slx(std::string path, int filesize, bool display_progress=true) {
     _["MagneticHeading"] = MagneticHeadingV,
     _["Milliseconds"] = MillisecondsV,
     _["valid"] = List::create(
-      _["heading"] = headingValidV,
-      _["altitude"] = altitudeValidV,
-      _["gpsSpeed"] = gpsSpeedValidV,
-      _["waterTemp"] = waterTempValidV,
-      _["position"] = positionValidV,
-      _["waterSpeed"] = waterSpeedValidV,
-      _["track"] = trackValidV
+      _["Heading"] = headingValidV,
+      _["Altitude"] = altitudeValidV,
+      _["GNSSSpeed"] = gpsSpeedValidV,
+      _["WaterTemperature"] = waterTempValidV,
+      _["Position"] = positionValidV,
+      _["WaterSpeed"] = waterSpeedValidV,
+      _["MagneticHeading"] = trackValidV
     ),
     _["GNSS"] = List::create(
       _["Speed"] = GNSSSpeedV,
