@@ -43,20 +43,65 @@
   
   frame_matrix <- do.call(cbind, raw_list)
   
-  class(frame_matrix) <- c("SonaR_frame", class(frame_matrix))
   attr(frame_matrix, "range") <- sonar_range
 
   return(frame_matrix)
 }
 
-plot.SonaR_frame_list <- function(frame_list){
-  rotate <- function(x){t(apply(x, 2, rev))}
+.add_geo <- function(df){
+  df$LongitudeRight <- .x_to_lon(df$XLowrance - abs(df$MinRange) * cos(df$GNSSHeading))
+  df$LongitudeLeft <- .x_to_lon(df$XLowrance + abs(df$MaxRange) * cos(df$GNSSHeading))
+  df$LatitudeRight <- .y_to_lat(df$YLowrance - abs(df$MinRange) * sin(df$GNSSHeading)) 
+  df$LatitudeLeft <- .y_to_lat(df$YLowrance + abs(df$MaxRange) * sin(df$GNSSHeading))
   
-  lapply(frame_list, function(frame){
-    sonar_range <- round(attr(frame, "range"), 0)
-    
-    image(rotate(frame), useRaster = TRUE, axes = FALSE, ylab = "Depth (m)", xlab = "Frame number")
-    axis(1, at=seq(0, 1, length.out = 6), labels = round(seq(1, ncol(frame), length.out = 6), 0))
-    axis(2, at=seq(0, 1, length.out = 6), labels = rev(seq(sonar_range[1], sonar_range[2], length.out = 6)))
-  })
+  df$FrameNumber <- seq(1, nrow(df), 1)
+  
+  return(df)
+}
+
+.geo_ref <- function(df, sidescan_width = 2800, gcp_interval = 25){
+  mid <- cbind(df$FrameNumber, sidescan_width/2, df$Longitude, df$Latitude)
+  right <- cbind(df$FrameNumber, sidescan_width, df$LongitudeRight, df$LatitudeRight)
+  left <- cbind(df$FrameNumber, 0, df$LongitudeLeft, df$LatitudeLeft)
+  
+  gcp <- rbind(mid[seq(1, nrow(mid), gcp_interval),],
+               right[seq(1, nrow(right), gcp_interval),],
+               left[seq(1, nrow(left), gcp_interval),])
+  
+  tmp_rast <- file.path(tempdir(), "tmp_raster.tif")
+  tmp_rast_gcp <- file.path(tempdir(), "tmp_raster_gcp.tif")
+  tmp_rast_gcp_warp <- file.path(tempdir(), "tmp_raster_gcp_warp.tif")
+  
+  frame_matrix <- .create_frame_matrix(df$Frame, c(df$MinRange[1], df$MaxRange[1]))
+  
+  frame_raster <- raster::raster(frame_matrix, xmn=0, xmx=ncol(frame_matrix), ymn=0, ymx=nrow(frame_matrix))
+  
+  raster::writeRaster(frame_raster, tmp_rast, format = "GTiff", overwrite=TRUE)
+  
+  gdalUtils::gdal_translate(src_dataset = tmp_rast,
+                            dst_dataset = tmp_rast_gcp,
+                            gcp = gcp,
+                            overwrite=TRUE)
+  
+  gdalUtils::gdalwarp(srcfile = tmp_rast_gcp,
+                      dstfile = tmp_rast_gcp_warp,
+                      #tps = TRUE,
+                      order = 2,
+                      s_srs = "EPSG:4326", 
+                      t_srs = "EPSG:4326",
+                      ot = "Byte", 
+                      dstnodata = 0, 
+                      co = "COMPRESS=LZW",
+                      r = "near",
+                      overwrite=TRUE)
+  
+  return(raster::raster(tmp_rast_gcp_warp))
+}
+
+.sonar_read_raw <- function(path){
+  f <- file(path, "rb")
+  raw <- readBin(f, "raw", n = file.size(path), endian="little")
+  close(f)
+  
+  return(raw)
 }

@@ -10,10 +10,12 @@
 #' @return data.frame
 #' @export
 
-read_sonar_header <- function(path, display_progress = TRUE){
+sonar_header <- function(path, display_progress = TRUE){
   
   if(!file.exists(path)){
+    
     stop("The file: ", path, " does not exist")
+    
   }else{
     
     filesize <- file.size(path)
@@ -34,7 +36,7 @@ read_sonar_header <- function(path, display_progress = TRUE){
     #Translate SurveyType
     df$SurveyTypeLabel <- .add_SurveyTypeLabel(df$SurveyType)
     
-    attr(df, "sonaR") <- "header"
+    class(df) <- c("data.frame", "sonaR_header")
     
     return(df)
     }
