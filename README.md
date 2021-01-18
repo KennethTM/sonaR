@@ -1,18 +1,22 @@
 # sonaR
-## R-package for reading data from recreational sonars
-## Currenly supports Lowrance '.sl2' and '.sl3' file formats
 
 ## *Under ongoing development*
 
-### Installation
+### R-package for reading data from recreational sonars
+### Currenly supports Lowrance '.sl2' and '.sl3' file formats
+
+
+#### Installation
 
 Use the 'remotes' package to install the package from Github:
 
 ```r
-remotes::install_github('KennetTM/sonaR')
+remotes::install_github('KennethTM/sonaR')
 ```
 
-### Examples of useage
+#### Examples of useage
+
+Reading and plotting data:
 
 ```r
 library(sonaR)
@@ -41,6 +45,8 @@ sonar_show_image(sl_sidescan)
 ![Example of sonar data from the 'Primary' channel](https://github.com/KennethTM/sonaR/blob/master/test/primary_example.png)
 
 ![Example of sonar data from the 'Sidescan' channel](https://github.com/KennethTM/sonaR/blob/master/test/sidescan_example.png)
+
+Georeferencing data:
 
 ```r
 #Georefence sonar sidescan data
