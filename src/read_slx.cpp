@@ -55,7 +55,7 @@ DataFrame read_slx(std::string path, int filesize, bool display_progress=true) {
   DataFrame out;
   
   ::std::ifstream in;
-  in.rdbuf()->pubsetbuf(buffer, sizeof buffer);
+  in.rdbuf()->pubsetbuf(buffer, sizeof(buffer));
   in.open(full_path, ::std::ifstream::in | ::std::ios::binary);
   
   uint16_t format;
@@ -179,7 +179,7 @@ DataFrame read_slx(std::string path, int filesize, bool display_progress=true) {
     }
     
   }else if(format == 3){
-
+    
     while (!(in.tellg() == -1)) {
       
       std::streampos recStart = in.tellg();
@@ -281,9 +281,11 @@ DataFrame read_slx(std::string path, int filesize, bool display_progress=true) {
     }
     
   }else{
+    
     Rcout << "The file appears to be neither '.sl2' or '.sl3' - stopping." << std::endl;
     
     return(-1);
+    
   }
   
   PositionOfFirstByteV.resize(PositionOfFirstByteV.size()-1);

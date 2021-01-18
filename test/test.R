@@ -1,62 +1,85 @@
 library(sonaR)
 
-
-# test_file <- system.file("exdat", "example.sl2", package="arabia")
-# test_head <- sonar_header(test_file)
-# test_frame <- sonar_frames(test_file, test_head, "Secondary")
-# plot(test_frame)
-
 #Test .sl2 file
 test_sl2 <- paste0(getwd(), "/test/Sonar_2020-08-15_18.17.15.sl2")
-
-sl2_head <- sonar_header(test_sl2)
-saveRDS(sl2_head, paste0(getwd(), "/test/sl2_head.rds"))
-sl2_head <- readRDS(paste0(getwd(), "/test/sl2_head.rds"))
-sl2_head_sub <- sl2_head[113000:117000,]
-
-plot(sl2_head_sub$Longitude, sl2_head_sub$Latitude)
-
-sl2_frame_Primary <- sonar_frames(test_sl2, sl2_head_sub, "Primary")
-sl2_frame_Sidescan <- sonar_frames(test_sl2, sl2_head_sub, "Sidescan")
-
-plot(sl2_frame_Primary)
-plot(sl2_frame_Sidescan)
-
-sl2_frame_Sidescan_geo <- sonar_sidescan_geo(test_sl2, sl2_head_sub)
-plot(sl2_frame_Sidescan_geo[[1]])
-
-sl2_frame_Primary_intens_at_depth <- sonar_intens_at_depth(test_sl2, sl2_head_sub, "Primary", window_size = 0)
-
-library(tidyverse)
-sl2_frame_Primary_intens_at_depth %>% 
-  ggplot(aes(Longitude, Latitude, col = IntensityAtDepth))+
-  geom_point()+
-  theme_bw()
+#sl2 <- sonar_read(test_sl2, read_frames = FALSE)
+#sl2_sub <- sl2[10000:30000,]
+#saveRDS(sl2_sub, paste0(getwd(), "/test/sl2.rds"))
+sl_sub <- readRDS(paste0(getwd(), "/test/sl2.rds"))
 
 #Test .sl3 file
 test_sl3 <- paste0(getwd(), "/test/Bromme 01.sl3")
+# sl3 <- sonar_read(test_sl3)
+# sl3_sub <- sl3[10000:30000,]
+# saveRDS(sl3_sub, paste0(getwd(), "/test/sl3.rds"))
+sl_sub <- readRDS(paste0(getwd(), "/test/sl3.rds"))
 
-sl3_head <- sonar_header(test_sl3)
-saveRDS(sl3_head, paste0(getwd(), "/test/sl3_head.rds"))
-sl3_head <- readRDS(paste0(getwd(), "/test/sl3_head.rds"))
-sl3_head_sub <- sl3_head[25000:30000,]
+#Test package functionality
+sl_sub
+class(sl_sub)
+sl_sub[1:5]
+class(sl_sub[1:5])
+sl_sub[1:10,]
+class(sl_sub[1:10,])
 
-plot(sl3_head_sub$Longitude, sl3_head_sub$Latitude)
+plot(sl_sub)
 
-sl3_frame_Primary <- sonar_frames(test_sl3, sl3_head_sub, "Primary")
-sl3_frame_Downscan <- sonar_frames(test_sl3, sl3_head_sub, "Downscan")
-sl3_frame_Sidescan <- sonar_frames(test_sl3, sl3_head_sub, "Sidescan")
+sl_primary <- sonar_image(sl_sub, channel = "Primary")
+sl_secondary <- sonar_image(sl_sub, channel = "Secondary")
+sl_downscan <- sonar_image(sl_sub, channel = "Downscan")
+sl_sidescan <- sonar_image(sl_sub, channel = "Sidescan")
+sl_sidescan_norm <- sonar_image(sl_sub, channel = "Sidescan", normalize_sidescan = TRUE)
 
-plot(sl3_frame_Primary)
-plot(sl3_frame_Downscan)
-plot(sl3_frame_Sidescan)
+sonar_show_image(sl_primary)
+sonar_show_image(sl_secondary)
+sonar_show_image(sl_downscan)
+sonar_show_image(sl_sidescan)
+sonar_show_image(sl_sidescan_norm)
 
-sl3_frame_Sidescan_geo <- sonar_sidescan_geo(test_sl3, sl3_head_sub)
-plot(sl3_frame_Sidescan_geo[[1]])
+sl_geo <- sonar_sidescan_geo(sl_sub[0:8000,], res = 4e-06)
+plot(sl_geo, col = heat.colors(10))
 
-sl3_frame_Primary_intens_at_depth <- sonar_intens_at_depth(test_sl3, sl3_head_sub, "Sidescan", window_size = 0)
+sl_intens <- sonar_depth_intensity(sl_sub, channel = "Primary", window_size = 0)
 
-sl3_frame_Primary_intens_at_depth %>% 
-  ggplot(aes(Longitude, Latitude, col = IntensityAtDepth))+
-  geom_point()+
-  theme_bw()
+library(mapview)
+mapview(sl_geo)
+
+#Experimental code for file reading
+# #extract subfile for experiements
+# f <- file(test_sl2, "rb")
+# raw <- readBin(f, "raw", n = file.size(test_sl2), endian="little")
+# close(f)
+# 
+# header <- raw[1:8]
+# filesize <- file.size(test_sl2)
+# est_recs <- filesize/2000
+# 
+# meta_list <- vector("list", est_recs)
+# frame_list <- vector("list", est_recs)
+# 
+# offset <- 8
+# index <- 1
+# 
+# while (offset < length(raw)){
+#   meta <- raw[(1+offset):(offset+144)]
+#   PositionOfFirstByte <- readBin(meta[1:4], "int", size = 4)
+#   OriginalLengthOfEchoData <- readBin(meta[35:36], "int", size=2, endian="little", signed=FALSE)
+#   
+#   meta_list[[index]] <- meta
+#   frame_list[[index]] <- as.integer(raw[(PositionOfFirstByte+1+144):(PositionOfFirstByte+144+OriginalLengthOfEchoData)])
+#   
+#   index <- index + 1
+#   offset <- (PositionOfFirstByte+144+OriginalLengthOfEchoData)
+#   
+#   if((index %% 10000) == 0){print(index)}
+# }
+# 
+# meta_mat <- matrix(unlist(meta_list), nrow = 144)
+# 
+# PositionOfFirstByte_vec <- readBin(meta_mat[1:4,], what = "integer", size = 4, n=10)
+# 
+# raw_sub <- raw[1:10000000]
+# test_sl2_sub <- paste0(getwd(), "/test/Sonar_2020-08-15_18.17.15_sub.sl2")
+# fw <- file(test_sl2_sub, "wb")
+# writeBin(raw_sub, fw, endian="little", useBytes = FALSE)
+# close(fw)
