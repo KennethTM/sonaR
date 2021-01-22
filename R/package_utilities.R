@@ -84,7 +84,14 @@
 }
 
 .norm_sidescan <- function(mat){
+  
   rowmean <- rowMeans(mat)
   mat_norm <- mat/rowmean
+  
+  # if(water_cut){
+  #   water_cut_size <- 50
+  #   mat_norm[((frame_length/2)-water_cut_size):((frame_length/2)+water_cut_size),] <- 0
+  # }
+  
   return(mat_norm)
 }

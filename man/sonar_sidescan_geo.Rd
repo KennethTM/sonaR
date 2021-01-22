@@ -4,7 +4,7 @@
 \alias{sonar_sidescan_geo}
 \title{Function to georeference sidescan data extracted from sonar}
 \usage{
-sonar_sidescan_geo(sonar, res = 5e-06, fun = max)
+sonar_sidescan_geo(sonar, res = 5e-06, normalize_sidescan = FALSE, fun = max)
 }
 \arguments{
 \item{res}{Target resolution for grid in degrees.}

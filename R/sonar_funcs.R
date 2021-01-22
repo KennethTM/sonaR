@@ -125,7 +125,7 @@ sonar_depth_intensity <- function(sonar, channel, window_size = 0){
 #' @return Raster object
 #' @export sonar_sidescan_geo
 #' @export
-sonar_sidescan_geo <- function(sonar, res = 0.000005, fun = max){
+sonar_sidescan_geo <- function(sonar, res = 0.000005, normalize_sidescan = FALSE, fun = max){
 
   if(!inherits(sonar, "sonar")){
     stop("Object must of type 'sonar'.")
@@ -137,12 +137,13 @@ sonar_sidescan_geo <- function(sonar, res = 0.000005, fun = max){
     stop("No records of type: Sidescan in data.")
   }
   
-  pix <- mapply(function(min, max, frame){
-    seq(min, max, length.out = length(frame))
+  frame_length <- length(sonar_sub$Frame[[1]])
+  
+  pix <- mapply(function(min, max){
+    seq(min, max, length.out = frame_length)
   },
   sonar_sub$MinRange,
   sonar_sub$MaxRange,
-  sonar_sub$Frame, 
   SIMPLIFY = FALSE)
   
   pix_lon <- mapply(function(x_coord, pix, heading){
@@ -154,7 +155,7 @@ sonar_sidescan_geo <- function(sonar, res = 0.000005, fun = max){
   SIMPLIFY = FALSE)
   
   pix_lat <- mapply(function(y_coord, pix, heading){
-    .y_to_lat(y_coord + pix * cos(heading))
+    .y_to_lat(y_coord + pix * sin(heading)) #sin
   },
   sonar_sub$YLowrance,
   pix,
@@ -164,16 +165,19 @@ sonar_sidescan_geo <- function(sonar, res = 0.000005, fun = max){
   x <- unlist(pix_lon)
   y <- unlist(pix_lat)
   
-  #create option for normalizing sidescan and remove water column
-
-  rast_template <- raster(xmn = min(x), xmx = max(x), ymn = min(y), ymx = max(y),
-                          crs = "+proj=longlat +datum=WGS84 +no_defs",
-                          res = res)
+  rast_template <- raster::raster(xmn = min(x), xmx = max(x), ymn = min(y), ymx = max(y),
+                                  crs = "+proj=longlat +datum=WGS84 +no_defs",
+                                  res = res)
   
-  rast_sidescan <- rasterize(cbind(x, y), 
-                             rast_template,
-                             fun = fun,
-                             field = unlist(sonar_sub$Frame))
+  z <- unlist(sonar_sub$Frame)
+  
+  if(normalize_sidescan){
+    z_mat <- matrix(z, nrow=frame_length)
+    z_mat <- .norm_sidescan(z_mat)
+    z <- as.vector(z_mat)
+  }
+  
+  rast_sidescan <- raster::rasterize(cbind(x, y), rast_template, fun = fun, field = z)
   
   return(rast_sidescan)
 

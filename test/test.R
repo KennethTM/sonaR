@@ -2,14 +2,14 @@ library(sonaR)
 
 #Test .sl2 file
 test_sl2 <- paste0(getwd(), "/test/Sonar_2020-08-15_18.17.15.sl2")
-#sl2 <- sonar_read(test_sl2, read_frames = FALSE)
-#sl2_sub <- sl2[10000:30000,]
-#saveRDS(sl2_sub, paste0(getwd(), "/test/sl2.rds"))
+#sl2 <- sonar_read(test_sl2)
+# sl2_sub <- sl2[20000:30000,]
+# saveRDS(sl2_sub, paste0(getwd(), "/test/sl2.rds"))
 sl_sub <- readRDS(paste0(getwd(), "/test/sl2.rds"))
 
 #Test .sl3 file
 test_sl3 <- paste0(getwd(), "/test/Bromme 01.sl3")
-# sl3 <- sonar_read(test_sl3)
+#sl3 <- sonar_read(test_sl3)
 # sl3_sub <- sl3[10000:30000,]
 # saveRDS(sl3_sub, paste0(getwd(), "/test/sl3.rds"))
 sl_sub <- readRDS(paste0(getwd(), "/test/sl3.rds"))
@@ -36,13 +36,32 @@ sonar_show_image(sl_downscan)
 sonar_show_image(sl_sidescan)
 sonar_show_image(sl_sidescan_norm)
 
-sl_geo <- sonar_sidescan_geo(sl_sub[0:8000,], res = 4e-06)
-plot(sl_geo, col = heat.colors(10))
+sl_geo <- sonar_sidescan_geo(sl_sub, res = 5e-06, normalize_sidescan = TRUE, fun = mean)
+plot(sl_geo, col = rev(grey.colors(10)))
+plot(sl_sub$Longitude, sl_sub$Latitude)
 
 sl_intens <- sonar_depth_intensity(sl_sub, channel = "Primary", window_size = 0)
 
 library(mapview)
 mapview(sl_geo)
+
+
+#Experimental code for iamge processing
+# library(OpenImageR)
+# 
+# res_delate <- delationErosion(sl_sidescan_norm[[1]], Filter = c(9,9), method = 'delation')
+# res_erode <- delationErosion(sl_sidescan_norm[[1]], Filter = c(9,9), method = 'erosion')
+# res_gam <- gamma_correction(sl_sidescan_norm[[1]], 0.5)
+# 
+# image(sl_sidescan_norm[[1]], useRaster=TRUE)
+# image(res_delate, useRaster=TRUE)
+# image(res_erode, useRaster=TRUE)
+# image(res_gam, useRaster=TRUE)
+
+
+
+
+
 
 #Experimental code for file reading
 # #extract subfile for experiements

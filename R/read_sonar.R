@@ -44,14 +44,14 @@ sonar_read <- function(path, display_progress = TRUE, read_frames = TRUE){
       
       df$Frame <- mapply(
         function(init, end){
-          as.integer(raw[(init+headersize):(init+headersize+end-1)])
+          as.integer(raw[(init+headersize+1):(init+headersize+end)]) #(init+headersize+end-1) ??
         },
         df$PositionOfFirstByte,
         df$OriginalLengthOfEchoData,
         SIMPLIFY = FALSE)
       
       vars_to_keep <- c(vars_to_keep, "Frame")
-    }
+      }
     
     df <- df[,vars_to_keep]
     
