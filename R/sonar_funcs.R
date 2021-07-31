@@ -125,7 +125,7 @@ sonar_depth_intensity <- function(sonar, channel, window_size = 0){
 #' @return Raster object
 #' @export sonar_sidescan_geo
 #' @export
-sonar_sidescan_geo <- function(sonar, res = 0.000005, normalize_sidescan = FALSE, fun = max){
+sonar_sidescan_geo <- function(sonar, res = 0.000005, normalize_sidescan = FALSE, slant_range = FALSE, fun = max, return_df = FALSE){
 
   if(!inherits(sonar, "sonar")){
     stop("Object must of type 'sonar'.")
@@ -139,26 +139,40 @@ sonar_sidescan_geo <- function(sonar, res = 0.000005, normalize_sidescan = FALSE
   
   frame_length <- length(sonar_sub$Frame[[1]])
   
-  pix <- mapply(function(min, max){
-    seq(min, max, length.out = frame_length)
-  },
-  sonar_sub$MinRange,
-  sonar_sub$MaxRange,
-  SIMPLIFY = FALSE)
+  if(slant_range){
+    dist <- mapply(function(min, max, depth){
+      ground_dist <- seq(min, max, length.out = frame_length)
+      slant_dist <- sqrt(abs(ground_dist)^2+depth^2)*sign(ground_dist)
+      return(slant_dist)
+    },
+    sonar_sub$MinRange,
+    sonar_sub$MaxRange,
+    sonar_sub$WaterDepth,
+    SIMPLIFY = FALSE)
+  }else{
+    dist <- mapply(function(min, max){
+      seq(min, max, length.out = frame_length)
+    },
+    sonar_sub$MinRange,
+    sonar_sub$MaxRange,
+    SIMPLIFY = FALSE)
+  }
   
   pix_lon <- mapply(function(x_coord, pix, heading){
     .x_to_lon(x_coord + pix * cos(heading))
+    #(x_coord + pix * cos(heading))
   },
   sonar_sub$XLowrance,
-  pix,
+  dist,
   sonar_sub$GNSSHeading, 
   SIMPLIFY = FALSE)
   
   pix_lat <- mapply(function(y_coord, pix, heading){
-    .y_to_lat(y_coord + pix * sin(heading)) #sin
+    .y_to_lat(y_coord + pix * sin(heading))
+    #(y_coord + pix * sin(heading))
   },
   sonar_sub$YLowrance,
-  pix,
+  dist,
   sonar_sub$GNSSHeading, 
   SIMPLIFY = FALSE)
   
@@ -177,8 +191,12 @@ sonar_sidescan_geo <- function(sonar, res = 0.000005, normalize_sidescan = FALSE
     z <- as.vector(z_mat)
   }
   
-  rast_sidescan <- raster::rasterize(cbind(x, y), rast_template, fun = fun, field = z)
+  if(return_df){
+    return(data.frame(x=x, y=y, z=z))
+  }else{
+    rast_sidescan <- raster::rasterize(cbind(x, y), rast_template, fun = fun, field = z)
+    
+    return(rast_sidescan)
+  }
   
-  return(rast_sidescan)
-
 }

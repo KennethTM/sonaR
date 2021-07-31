@@ -7,3 +7,4 @@ test/*.rds
 .Ruserdata
 src/*.o
 src/*.so
+papers/

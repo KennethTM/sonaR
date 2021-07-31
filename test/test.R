@@ -36,11 +36,33 @@ sonar_show_image(sl_downscan)
 sonar_show_image(sl_sidescan)
 sonar_show_image(sl_sidescan_norm)
 
-sl_geo <- sonar_sidescan_geo(sl_sub, res = 5e-06, normalize_sidescan = TRUE, fun = mean)
+sl_geo <- sonar_sidescan_geo(sl_sub, res = 5e-06, normalize_sidescan = TRUE, fun = mean, slant_range = TRUE)
 plot(sl_geo, col = rev(grey.colors(10)))
 plot(sl_sub$Longitude, sl_sub$Latitude)
 
 sl_intens <- sonar_depth_intensity(sl_sub, channel = "Primary", window_size = 0)
+
+
+sl_geo_df <- sonar_sidescan_geo(sl_sub, normalize_sidescan = TRUE, slant_range = TRUE, return_df = TRUE)
+
+library(sf);library(gdalUtils)
+sl_geo_df %>% 
+  st_as_sf(coords = c("x", "y"), crs = 4326) %>% 
+  st_write("point_cloud.sqlite")
+
+gdalUtils::gdal_rasterize(src_datasource = "point_cloud.sqlite",
+                          dst_filename = "sidescan.tif",
+                          a = "z",
+                          co = "COMPRESS=LZW",
+                          tr = c(5e-7, 5e-7),
+                          a_nodata = -9999)
+
+# gdalUtils::gdal_grid(src_datasource = "point_cloud.sqlite",
+#                      dst_filename = "sidescan_grid.tif",
+#                      zfield = "z",
+#                      co = "COMPRESS=LZW",
+#                      a = "nearest")
+
 
 library(mapview)
 mapview(sl_geo)
