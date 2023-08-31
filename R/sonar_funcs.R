@@ -168,7 +168,7 @@ sonar_sidescan_geo <- function(sonar, res = 0.000005, normalize_sidescan = FALSE
   SIMPLIFY = FALSE)
   
   pix_lat <- mapply(function(y_coord, pix, heading){
-    .y_to_lat(y_coord + pix * sin(heading))
+    .y_to_lat(y_coord - pix * sin(heading))
     #(y_coord + pix * sin(heading))
   },
   sonar_sub$YLowrance,
