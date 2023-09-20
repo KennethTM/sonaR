@@ -1,6 +1,7 @@
 # sonaR
 
-## *Under ongoing development*
+## *This package is not under active development*
+## *See [sonarlight](https://github.com/KennethTM/sonarlight) for a Python alternative*
 
 ### R-package for reading data from recreational sonars
 ### Currenly supports Lowrance '.sl2' and '.sl3' file formats
